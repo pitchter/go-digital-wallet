@@ -1,0 +1,7 @@
+.git
+.gitignore
+.gocache
+.gomodcache
+coverage.out
+tmp
+README.md

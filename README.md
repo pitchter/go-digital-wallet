@@ -1,4 +1,4 @@
-# Wallet Service
+# go-digital-wallet
 
 ## Features
 

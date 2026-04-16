@@ -1,0 +1,1044 @@
+{
+	"info": {
+		"_postman_id": "f0776ae1-7470-49d3-a2c7-b8a4cb8cadc6",
+		"name": "Digital Wallet Service",
+		"description": "Postman collection for the Wallet Service MVP. Run requests in order to create users, wallets, top up, transfer, reverse, and exercise every public endpoint.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Health",
+			"item": [
+				{
+					"name": "Initialize Run + Healthz",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const env = (key, fallback) => pm.environment.get(key) || fallback;",
+									"const runId = Date.now().toString();",
+									"const suffix = runId.slice(-8);",
+									"pm.collectionVariables.set('run_id', runId);",
+									"pm.collectionVariables.set('user_a_external_ref', `${env('user_a_external_ref_prefix', 'alice')}-${runId}`);",
+									"pm.collectionVariables.set('user_b_external_ref', `${env('user_b_external_ref_prefix', 'bob')}-${runId}`);",
+									"pm.collectionVariables.set('user_a_updated_external_ref', `${env('user_a_updated_external_ref_prefix', 'alice-updated')}-${runId}`);",
+									"pm.collectionVariables.set('user_a_email', `${env('user_a_email_prefix', 'alice')}.${runId}@${env('email_domain', 'example.com')}`);",
+									"pm.collectionVariables.set('user_b_email', `${env('user_b_email_prefix', 'bob')}.${runId}@${env('email_domain', 'example.com')}`);",
+									"pm.collectionVariables.set('user_a_phone', `${env('user_a_phone_prefix', '08')}${suffix}`);",
+									"pm.collectionVariables.set('user_b_phone', `${env('user_b_phone_prefix', '09')}${suffix}`);",
+									"pm.collectionVariables.set('user_a_id', '');",
+									"pm.collectionVariables.set('user_b_id', '');",
+									"pm.collectionVariables.set('wallet_a_id', '');",
+									"pm.collectionVariables.set('wallet_b_id', '');",
+									"pm.collectionVariables.set('topup_transaction_id', '');",
+									"pm.collectionVariables.set('transfer_transaction_id', '');",
+									"pm.collectionVariables.set('reversal_transaction_id', '');",
+									"pm.collectionVariables.set('topup_idempotency_key', `${env('topup_idempotency_prefix', 'topup')}-${runId}`);",
+									"pm.collectionVariables.set('transfer_idempotency_key', `${env('transfer_idempotency_prefix', 'transfer')}-${runId}`);",
+									"pm.collectionVariables.set('reverse_idempotency_key', `${env('reverse_idempotency_prefix', 'reverse')}-${runId}`);"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', function () {",
+									"  pm.response.to.have.status(200);",
+									"});",
+									"const body = pm.response.json();",
+									"pm.test('health is ok', function () {",
+									"  pm.expect(body.status).to.eql('ok');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/healthz",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"healthz"
+							]
+						},
+						"description": "Initializes reusable variables for this run, then checks the health endpoint."
+					},
+					"response": []
+				},
+				{
+					"name": "Readyz",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', function () {",
+									"  pm.response.to.have.status(200);",
+									"});",
+									"const body = pm.response.json();",
+									"pm.test('readiness is ready', function () {",
+									"  pm.expect(body.status).to.eql('ready');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/readyz",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"readyz"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "Create User A",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('status is 201', function () {",
+									"  pm.response.to.have.status(201);",
+									"});",
+									"const body = pm.response.json();",
+									"pm.collectionVariables.set('user_a_id', body.id);",
+									"pm.test('user A id saved', function () {",
+									"  pm.expect(pm.collectionVariables.get('user_a_id')).to.eql(body.id);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"full_name\": \"Alizia\",\n  \"email\": \"Alizia@gmail.com\",\n  \"phone_number\": \"0999999990\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create User B",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('status is 201', function () {",
+									"  pm.response.to.have.status(201);",
+									"});",
+									"const body = pm.response.json();",
+									"pm.collectionVariables.set('user_b_id', body.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"full_name\": \"marcus\",\n  \"email\": \"marcus@gmail.com\",\n  \"phone_number\": \"0999999993\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List Users",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', function () {",
+									"  pm.response.to.have.status(200);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users?page={{page}}&limit={{limit}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "{{page}}"
+								},
+								{
+									"key": "limit",
+									"value": "{{limit}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update User A",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('status is 200', function () {",
+									"  pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"full_name\": \"update Alizia\",\n  \"email\": \"updateAlizia@gmail.com\",\n  \"phone_number\": \"0981233450\",\n  \"status\": \"active\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/{{user_a_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"{{user_a_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User A",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', function () {",
+									"  pm.response.to.have.status(200);",
+									"});",
+									"const body = pm.response.json();",
+									"pm.test('user A matches stored id', function () {",
+									"  pm.expect(body.id).to.eql(pm.collectionVariables.get('user_a_id'));",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/{{user_a_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"{{user_a_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User B",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/{{user_b_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"{{user_b_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Wallets",
+			"item": [
+				{
+					"name": "Create Wallet A",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('status is 201', function () {",
+									"  pm.response.to.have.status(201);",
+									"});",
+									"const body = pm.response.json();",
+									"pm.collectionVariables.set('wallet_a_id', body.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user_id\": \"{{user_a_id}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/wallets",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"wallets"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Wallet B",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('status is 201', function () {",
+									"  pm.response.to.have.status(201);",
+									"});",
+									"const body = pm.response.json();",
+									"pm.collectionVariables.set('wallet_b_id', body.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user_id\": \"{{user_b_id}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/wallets",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"wallets"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Wallet A",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', function () {",
+									"  pm.response.to.have.status(200);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/wallets/{{wallet_a_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"wallets",
+								"{{wallet_a_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Wallet B",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/wallets/{{wallet_b_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"wallets",
+								"{{wallet_b_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Transactions",
+			"item": [
+				{
+					"name": "Top Up Wallet A",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const rotate = (pm.environment.get('auto_rotate_idempotency_keys') || 'true') === 'true';",
+									"const prefix = pm.environment.get('topup_idempotency_prefix') || 'topup';",
+									"if (rotate) {",
+									"  pm.collectionVariables.set('topup_idempotency_key', `${prefix}-${Date.now()}`);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('status is 201', function () {",
+									"  pm.response.to.have.status(201);",
+									"});",
+									"const body = pm.response.json();",
+									"pm.collectionVariables.set('topup_transaction_id', body.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Idempotency-Key",
+								"value": "{{topup_idempotency_key}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"wallet_id\": \"{{wallet_a_id}}\",\n  \"amount_minor\": 10000,\n  \"metadata\": {\n    \"note\": \"top up wallet A\"\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/transactions/topup",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"transactions",
+								"topup"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Wallet A Balance",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', function () {",
+									"  pm.response.to.have.status(200);",
+									"});",
+									"const body = pm.response.json();",
+									"const expectedTopup = Number(pm.variables.get('topup_amount_minor') || 0);",
+									"pm.test('wallet A balance is at least 10000', function () {",
+									"  pm.expect(body.balance_minor).to.be.at.least(expectedTopup);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/wallets/{{wallet_a_id}}/balance",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"wallets",
+								"{{wallet_a_id}}",
+								"balance"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Wallet B Balance",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/wallets/{{wallet_b_id}}/balance",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"wallets",
+								"{{wallet_b_id}}",
+								"balance"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List Transactions",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', function () {",
+									"  pm.response.to.have.status(200);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/transactions?page={{page}}&limit={{limit}}&wallet_id={{wallet_a_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"transactions"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "{{page}}"
+								},
+								{
+									"key": "limit",
+									"value": "{{limit}}"
+								},
+								{
+									"key": "wallet_id",
+									"value": "{{wallet_a_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Top Up Transaction",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', function () {",
+									"  pm.response.to.have.status(200);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/transactions/{{topup_transaction_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"transactions",
+								"{{topup_transaction_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Transfer Wallet A to Wallet B",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const rotate = (pm.environment.get('auto_rotate_idempotency_keys') || 'true') === 'true';",
+									"const prefix = pm.environment.get('transfer_idempotency_prefix') || 'transfer';",
+									"if (rotate) {",
+									"  pm.collectionVariables.set('transfer_idempotency_key', `${prefix}-${Date.now()}`);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('status is 201', function () {",
+									"  pm.response.to.have.status(201);",
+									"});",
+									"const body = pm.response.json();",
+									"pm.collectionVariables.set('transfer_transaction_id', body.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Idempotency-Key",
+								"value": "{{transfer_idempotency_key}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"source_wallet_id\": \"{{wallet_a_id}}\",\n  \"destination_wallet_id\": \"{{wallet_b_id}}\",\n  \"amount_minor\": 10000,\n  \"metadata\": {\n    \"note\": \"transfer wallet a to wallet b\"\n  }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/transactions/transfer",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"transactions",
+								"transfer"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Transfer Transaction",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', function () {",
+									"  pm.response.to.have.status(200);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/transactions/{{transfer_transaction_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"transactions",
+								"{{transfer_transaction_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Reverse Transfer Transaction",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const rotate = (pm.environment.get('auto_rotate_idempotency_keys') || 'true') === 'true';",
+									"const prefix = pm.environment.get('reverse_idempotency_prefix') || 'reverse';",
+									"if (rotate) {",
+									"  pm.collectionVariables.set('reverse_idempotency_key', `${prefix}-${Date.now()}`);",
+									"}"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 201', function () {",
+									"  pm.response.to.have.status(201);",
+									"});",
+									"const body = pm.response.json();",
+									"pm.collectionVariables.set('reversal_transaction_id', body.id);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Idempotency-Key",
+								"value": "{{reverse_idempotency_key}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/transactions/{{transfer_transaction_id}}/reverse",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"transactions",
+								"{{transfer_transaction_id}}",
+								"reverse"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Maintenance",
+			"item": [
+				{
+					"name": "Update Wallet B Status to Suspended",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('status is 200', function () {",
+									"  pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"suspended\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/wallets/{{wallet_b_id}}/status",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"wallets",
+								"{{wallet_b_id}}",
+								"status"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete User B",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 204', function () {",
+									"  pm.response.to.have.status(204);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/{{user_b_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"{{user_b_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080"
+		},
+		{
+			"key": "run_id",
+			"value": ""
+		},
+		{
+			"key": "user_a_external_ref",
+			"value": ""
+		},
+		{
+			"key": "user_b_external_ref",
+			"value": ""
+		},
+		{
+			"key": "user_a_updated_external_ref",
+			"value": ""
+		},
+		{
+			"key": "user_a_email",
+			"value": ""
+		},
+		{
+			"key": "user_b_email",
+			"value": ""
+		},
+		{
+			"key": "user_a_phone",
+			"value": ""
+		},
+		{
+			"key": "user_b_phone",
+			"value": ""
+		},
+		{
+			"key": "user_a_id",
+			"value": ""
+		},
+		{
+			"key": "user_b_id",
+			"value": ""
+		},
+		{
+			"key": "wallet_a_id",
+			"value": ""
+		},
+		{
+			"key": "wallet_b_id",
+			"value": ""
+		},
+		{
+			"key": "topup_transaction_id",
+			"value": ""
+		},
+		{
+			"key": "transfer_transaction_id",
+			"value": ""
+		},
+		{
+			"key": "reversal_transaction_id",
+			"value": ""
+		},
+		{
+			"key": "topup_idempotency_key",
+			"value": ""
+		},
+		{
+			"key": "transfer_idempotency_key",
+			"value": ""
+		},
+		{
+			"key": "reverse_idempotency_key",
+			"value": ""
+		}
+	]
+}
